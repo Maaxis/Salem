@@ -1,0 +1,15 @@
+/ai/salem/knowledge/*
+/ai/shared_knowledge/*
+*.db
+/db/*
+/ai/_ai_openai.py
+/ai/org_vl/
+/ai/org/
+/ai/shared_knowledge/
+/ai/salem/
+/ai/ai_openai.py
+/ai/memory.py
+/ai/function_instructions.txt
+/ai/character.py
+/ai/tts_out.py
+/ai/transcribe_file.py
