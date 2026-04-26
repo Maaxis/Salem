@@ -16,218 +16,220 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from rich import print
 
-
 browser_lock = asyncio.Lock()
 
 
 def return_password(subdomain):
-    from db.secret import passwords
-    from base64 import b64decode
-    pw = b64decode(passwords.get(subdomain))
-    return pw.decode('utf-8')
+	from db.secret import passwords
+	from base64 import b64decode
+	pw = b64decode(passwords.get(subdomain))
+	return pw.decode('utf-8')
 
 
 class Forum:
-    def __init__(self, subdomain: str, time_setting: int = 1, users: list['User'] = None, bot: 'Bot' = None):
-        """
-        Initializes a new forum instance.
+	def __init__(self, subdomain: str, time_setting: int = 1, users: list['User'] = None, bot: 'Bot' = None):
+		"""
+		Initializes a new forum instance.
 
-        Args:
-            subdomain (str): The subdomain (e.g. "void")
-            time_setting (int, optional): The time setting for the forum (see time_setting.txt). Defaults to 1
-            users (type, optional): A list of Users. Defaults to None
-            bot (type, optional): User account for bot. Defaults None.
-        """
-        self.subdomain = subdomain
-        self.driver = start_driver()
-        self.time_setting = time_setting  # see time_setting.txt for how to set this correctly
-        self.url = "http://ndimforums.com/" + subdomain
-        self.users = users
-        self.bot = bot
+		Args:
+			subdomain (str): The subdomain (e.g. "void")
+			time_setting (int, optional): The time setting for the forum (see time_setting.txt). Defaults to 1
+			users (type, optional): A list of Users. Defaults to None
+			bot (type, optional): User account for bot. Defaults None.
+		"""
+		self.subdomain = subdomain
+		self.driver = start_driver()
+		self.time_setting = time_setting  # see time_setting.txt for how to set this correctly
+		self.url = "http://ndimforums.com/" + subdomain
+		self.users = users
+		self.bot = bot
+
 
 class Post:
-    def __init__(self, title=None, author=None, date=None, url=None, time=None, content=None):
-        self.title = title
-        self.author = author
-        self.date = date
-        self.url = url
-        self.time = time
-        self.content = content
+	def __init__(self, title=None, author=None, date=None, url=None, time=None, content=None):
+		self.title = title
+		self.author = author
+		self.date = date
+		self.url = url
+		self.time = time
+		self.content = content
+
 
 class User:
-    def __init__(self, subdomain: str, _id: int = None, username: str = None, password: str = None,
-                 masks: list['Mask'] = None, avatar: str = None, display_name: str = None, group: 'Group' = None):
-        """
-        Initializes a new instance of the class.
+	def __init__(self, subdomain: str, _id: int = None, username: str = None, password: str = None,
+	             masks: list['Mask'] = None, avatar: str = None, display_name: str = None, group: 'Group' = None):
+		"""
+		Initializes a new instance of the class.
 
-        Args:
-            subdomain (str): The subdomain for the instance.
-            _id (int, optional): The ID for the instance. Defaults to None.
-            username (str, optional): The username for the instance. Defaults to None.
-            password (str, optional): The password for the instance. Defaults to None.
-            masks (list[Mask], optional): The masks for the instance. Defaults to None.
-            avatar (str, optional): The avatar for the instance. Defaults to None.
-            display_name (str, optional): The display name for the instance. Defaults to None.
-            group (Group, optional): The group for the instance. Defaults to None.
-        """
-        self.subdomain = subdomain
-        self.id = _id  # id is not required since we can also premake the object for preregistering
-        self.username = username
-        self.password = password
-        self.masks = masks
-        self.avatar = avatar
-        self.group = group
-        self.display_name = display_name
+		Args:
+			subdomain (str): The subdomain for the instance.
+			_id (int, optional): The ID for the instance. Defaults to None.
+			username (str, optional): The username for the instance. Defaults to None.
+			password (str, optional): The password for the instance. Defaults to None.
+			masks (list[Mask], optional): The masks for the instance. Defaults to None.
+			avatar (str, optional): The avatar for the instance. Defaults to None.
+			display_name (str, optional): The display name for the instance. Defaults to None.
+			group (Group, optional): The group for the instance. Defaults to None.
+		"""
+		self.subdomain = subdomain
+		self.id = _id  # id is not required since we can also premake the object for preregistering
+		self.username = username
+		self.password = password
+		self.masks = masks
+		self.avatar = avatar
+		self.group = group
+		self.display_name = display_name
 
 
 class Mask:
-    def __init__(self):
-        pass
+	def __init__(self):
+		pass
 
 
 class Group:
-    def __init__(self):
-        pass
+	def __init__(self):
+		pass
 
 
 class Bot(User):
-    def __init__(self, subdomain: str, username: str, posts_per_page: int = 15):
-        super().__init__(subdomain=subdomain, username=username, password=self.return_password(subdomain))
-        self.posts_per_page = posts_per_page
+	def __init__(self, subdomain: str, username: str, posts_per_page: int = 15):
+		super().__init__(subdomain=subdomain, username=username, password=self.return_password(subdomain))
+		self.posts_per_page = posts_per_page
 
-    def return_password(self, subdomain):
-        from db.secret import passwords
-        from base64 import b64decode
-        pw = b64decode(passwords.get(subdomain))
-        return pw.decode('utf-8')
+	def return_password(self, subdomain):
+		from db.secret import passwords
+		from base64 import b64decode
+		pw = b64decode(passwords.get(subdomain))
+		return pw.decode('utf-8')
 
 
 def start_driver():
-    chrome_options = Options()
-    chrome_options.add_argument('--no-sandbox')
-    chrome_options.add_argument('--use-gl=desktop')
-    chrome_options.add_argument('--disable-dev-shm-usage')
-    # chrome_options.add_argument('--headless')
-    #chrome_options.add_argument("--remote-debugging-port=9222")
-    chrome_options.add_argument('user-data-dir=G:\\Code Projects\\PyCharmProjects\\Newo-2025\\selenium1')
-    # IMPORTANT: user-data-dir must be provided for login to be maintained between restarts
-    # when first starting the bot, manually log in to the bot account from the Chrome browser
-    chrome_options.add_argument("--log-level=3")
-    chrome_options.add_argument("--disable-logging")
-    chrome_options.add_argument("--disable-gpu")
-    #chrome_options.add_experimental_option("detach", True)
-    driver = webdriver.Chrome(options=chrome_options)
-    driver.get('https://www.google.com')
-    driver.implicitly_wait(1)
-    return driver
+	chrome_options = Options()
+	chrome_options.add_argument('--no-sandbox')
+	chrome_options.add_argument('--use-gl=desktop')
+	chrome_options.add_argument('--disable-dev-shm-usage')
+	# chrome_options.add_argument('--headless')
+	# chrome_options.add_argument("--remote-debugging-port=9222")
+	chrome_options.add_argument('user-data-dir=G:\\Code Projects\\PyCharmProjects\\Newo-2025\\selenium1')
+	# IMPORTANT: user-data-dir must be provided for login to be maintained between restarts
+	# when first starting the bot, manually log in to the bot account from the Chrome browser
+	chrome_options.add_argument("--log-level=3")
+	chrome_options.add_argument("--disable-logging")
+	chrome_options.add_argument("--disable-gpu")
+	# chrome_options.add_experimental_option("detach", True)
+	driver = webdriver.Chrome(options=chrome_options)
+	driver.get('https://www.google.com')
+	driver.implicitly_wait(1)
+	return driver
+
 
 def quit_driver(driver):
-    if driver:
-        driver.quit()
-        driver = None
+	if driver:
+		driver.quit()
+		driver = None
 
 
 def setup():  # use this for manual first-time logins
-    start_driver()
+	start_driver()
 
 
 def parse_time(unformatted_time):
-    """Provide a time string from NDIM, returns a datetime object"""
-    # TODO: make compatible for all time settings
-    # Examples of acceptable inputs:
-    # 5th Apr 2026 9:00:43 PM
-    # Sunday 5th April 2026, 9:00:43 PM
-    # 04/05/2026 21:00:43 (assumes MM/DD/YYYY)
-    # Relative times don't work
-    months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October',
-              'November', 'December']
-    months_short = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    time = unformatted_time
-    # time1 = "5th Apr 2026 9:00:43 PM"
-    # time2 = "Sunday 5th April 2026, 9:00:43 PM"
-    # time3 = "04/05/2026 21:00:43"
-    num_month = 0
-    if "day" in unformatted_time: # ignore mention of Sunday, remove comma
-        time = unformatted_time.split("day ")[1]
-        time = time.replace(",","")
-        # time1 = "5th Apr 2026 9:00:43 PM"
-        # time2 = "5th April 2026 9:00:43 PM"
-        # time3 = "04/05/2026 21:00:43"
-    for month in months:
-        if month in time:
-            num_month = (months.index(month)) + 1
-    for month in months_short:
-        if month in time:
-            num_month = (months_short.index(month)) + 1
-    if "/" not in time:
-        elements = time.split(" ")
-        #day = ["5th", "Apr", "2026", "9:00:43", "PM"]
-        day = elements[0].replace('th', '').replace('st', '').replace('nd', '').replace('rd', '')
-        month = str(num_month)
-        year = elements[2]
-    else: # for MM/DD/YYYY
-        date = time.split(" ")[0]
-        date = date.split("/")
-        month = int(date[0])
-        day = int(date[1])
-        year = int(date[2])
-    time = time.split(":")
-    hour = time[0].split(" ")[-1]
-    minute = time[1]
-    second = time[2].split(" ")[0]
-    if "PM" in time[2]:
-        if hour == "12":
-            hour = hour
-        else:
-            hour = str(int(hour) + 12)
-    else:
-        hour = hour
-    full_time = str(year) + "-" + str(month) + "-" + str(day) + " " + str(hour) + ":" + str(minute) + ":" + str(second)
-    datetime_obj = datetime.datetime.strptime(full_time, '%Y-%m-%d %H:%M:%S')
-    return datetime_obj
+	"""Provide a time string from NDIM, returns a datetime object"""
+	# TODO: make compatible for all time settings
+	# Examples of acceptable inputs:
+	# 5th Apr 2026 9:00:43 PM
+	# Sunday 5th April 2026, 9:00:43 PM
+	# 04/05/2026 21:00:43 (assumes MM/DD/YYYY)
+	# Relative times don't work
+	months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October',
+	          'November', 'December']
+	months_short = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+	time = unformatted_time
+	# time1 = "5th Apr 2026 9:00:43 PM"
+	# time2 = "Sunday 5th April 2026, 9:00:43 PM"
+	# time3 = "04/05/2026 21:00:43"
+	num_month = 0
+	if "day" in unformatted_time:  # ignore mention of Sunday, remove comma
+		time = unformatted_time.split("day ")[1]
+		time = time.replace(",", "")
+		# time1 = "5th Apr 2026 9:00:43 PM"
+		# time2 = "5th April 2026 9:00:43 PM"
+		# time3 = "04/05/2026 21:00:43"
+	for month in months:
+		if month in time:
+			num_month = (months.index(month)) + 1
+	for month in months_short:
+		if month in time:
+			num_month = (months_short.index(month)) + 1
+	if "/" not in time:
+		elements = time.split(" ")
+		# day = ["5th", "Apr", "2026", "9:00:43", "PM"]
+		day = elements[0].replace('th', '').replace('st', '').replace('nd', '').replace('rd', '')
+		month = str(num_month)
+		year = elements[2]
+	else:  # for MM/DD/YYYY
+		date = time.split(" ")[0]
+		date = date.split("/")
+		month = int(date[0])
+		day = int(date[1])
+		year = int(date[2])
+	time = time.split(":")
+	hour = time[0].split(" ")[-1]
+	minute = time[1]
+	second = time[2].split(" ")[0]
+	if "PM" in time[2]:
+		if hour == "12":
+			hour = hour
+		else:
+			hour = str(int(hour) + 12)
+	else:
+		hour = hour
+	full_time = str(year) + "-" + str(month) + "-" + str(day) + " " + str(hour) + ":" + str(minute) + ":" + str(second)
+	datetime_obj = datetime.datetime.strptime(full_time, '%Y-%m-%d %H:%M:%S')
+	return datetime_obj
 
 
 def login(forum, user, admin=False):
-    """
-    Logs in to the forum using the provided credentials.
+	"""
+	Logs in to the forum using the provided credentials.
 
-    Args:
-        forum (Forum): The forum object representing the forum to log in to.
-        user (Bot): The user object representing the user to log in as.
-        admin (bool, optional): A flag indicating whether to log in to the Admin CP.
-            Defaults to False.
+	Args:
+		forum (Forum): The forum object representing the forum to log in to.
+		user (Bot): The user object representing the user to log in as.
+		admin (bool, optional): A flag indicating whether to log in to the Admin CP.
+			Defaults to False.
 
-    Returns:
-        None
-    """
-    driver = forum.driver
-    if admin:
-        driver.get(forum.url + '/Admin/admincp.asp')
-    else:
-        driver.get(forum.url + '/login.asp')
-    # username_box = driver.find_element(By.NAME, "username")
-    pw_box = driver.find_element(By.NAME, "pwd")
-    button = driver.find_element(By.XPATH, "//input[@value='login']")
-    # username_box.send_keys("Newo")
-    pw = return_password(subdomain=forum.subdomain)
-    pw_box.send_keys(pw)
-    driver.execute_script("arguments[0].click();", button)
+	Returns:
+		None
+	"""
+	driver = forum.driver
+	if admin:
+		driver.get(forum.url + '/Admin/admincp.asp')
+	else:
+		driver.get(forum.url + '/login.asp')
+	# username_box = driver.find_element(By.NAME, "username")
+	pw_box = driver.find_element(By.NAME, "pwd")
+	button = driver.find_element(By.XPATH, "//input[@value='login']")
+	# username_box.send_keys("Newo")
+	pw = return_password(subdomain=forum.subdomain)
+	pw_box.send_keys(pw)
+	driver.execute_script("arguments[0].click();", button)
 
 
 def navigate_forum(forum: Forum, forum_id):
-    """
-    Navigates to a specific forum in the provided Forum object.
+	"""
+	Navigates to a specific forum in the provided Forum object.
 
-    Args:
-        forum (Forum): The Forum object containing the necessary driver and URL.
-        forum_id (int): The ID of the forum to navigate to.
+	Args:
+		forum (Forum): The Forum object containing the necessary driver and URL.
+		forum_id (int): The ID of the forum to navigate to.
 
-    Returns:
-        None
-    """
-    driver = forum.driver
-    url = f"ndimforums.com/{forum.subdomain}/forum.asp?forumid={forum_id}"
-    driver.get(url)
+	Returns:
+		None
+	"""
+	driver = forum.driver
+	url = f"ndimforums.com/{forum.subdomain}/forum.asp?forumid={forum_id}"
+	driver.get(url)
 
 
 def make_thread(forum: Forum, forum_id: int, thread_title: str, post_content: str, thread_description: str = "",
@@ -235,608 +237,614 @@ def make_thread(forum: Forum, forum_id: int, thread_title: str, post_content: st
                 pinned: bool = False,
                 poll: bool = False, poll_question: str = "", poll_options: [str] = None, poll_num_of_options: int = 0,
                 poll_num_of_votes: int = 0):
-    """
-    Creates a new thread in the specified forum with the given parameters.
+	"""
+	Creates a new thread in the specified forum with the given parameters.
 
-    Args:
-        forum (Forum): The forum object representing the forum where the thread will be created.
-        forum_id (int): The ID of the forum where the thread will be created.
-        thread_title (str): The title of the new thread.
-        post_content (str): The content of the initial post in the thread.
-        thread_description (str, optional): The description of the new thread (default: "").
-        locked (bool, optional): Whether the new thread should be locked (default: False).
-        pinned (bool, optional): Whether the new thread should be pinned (default: False).
-        poll (bool, optional): Whether the new thread should have a poll (default: False).
-        poll_question (str, optional): The question for the poll (default: "").
-        poll_options (list[str], optional): The options for the poll (default: None).
-        poll_num_of_options (int, optional): The number of options for the poll (default: 0).
-        poll_num_of_votes (int, optional): The number of votes for the poll (default: 0).
+	Args:
+		forum (Forum): The forum object representing the forum where the thread will be created.
+		forum_id (int): The ID of the forum where the thread will be created.
+		thread_title (str): The title of the new thread.
+		post_content (str): The content of the initial post in the thread.
+		thread_description (str, optional): The description of the new thread (default: "").
+		locked (bool, optional): Whether the new thread should be locked (default: False).
+		pinned (bool, optional): Whether the new thread should be pinned (default: False).
+		poll (bool, optional): Whether the new thread should have a poll (default: False).
+		poll_question (str, optional): The question for the poll (default: "").
+		poll_options (list[str], optional): The options for the poll (default: None).
+		poll_num_of_options (int, optional): The number of options for the poll (default: 0).
+		poll_num_of_votes (int, optional): The number of votes for the poll (default: 0).
 
-    TODO: set up polls
-    """
-    driver = forum.driver
-    driver.get(forum.url + '/newthread.asp?forumid=' + str(forum_id))
-    title_box = driver.find_element(By.XPATH,
-                                    "//*[@id=\"sendform\"]/div/table/tbody/tr[2]/td/table/tbody/tr[1]/td[2]/input")
-    description_box = driver.find_element(By.XPATH,
-                                          "//*[@id=\"sendform\"]/div/table/tbody/tr[2]/td/table/tbody/tr[2]/td[2]/input")
-    post_box = driver.find_element(By.ID, "fullreply")
-    title_box.send_keys(thread_title)
-    description_box.send_keys(thread_description)
-    post_box.send_keys(post_content)
-    if locked:
-        lock = driver.find_element(By.XPATH,
-                                   "//*[@id=\"sendform\"]/div/table/tbody/tr[2]/td/table/tbody/tr["
-                                   "6]/td/table/tbody/tr/td[1]/input")
-        lock.send_keys(Keys.ENTER)
-        lock.click()
-    if pinned:
-        pin = driver.find_element(By.XPATH,
-                                  "//*[@id=\"sendform\"]/div/table/tbody/tr[2]/td/table/tbody/tr["
-                                  "6]/td/table/tbody/tr/td[2]/input")
-        pin.send_keys(Keys.ENTER)
-        pin.click()
-    create = driver.find_element(By.XPATH, "//*[@id=\"sendform\"]/div/table/tbody/tr[2]/td/table/tbody/tr[7]/td/input")
-    create.click()
+	TODO: set up polls
+	"""
+	driver = forum.driver
+	driver.get(forum.url + '/newthread.asp?forumid=' + str(forum_id))
+	title_box = driver.find_element(By.XPATH,
+	                                "//*[@id=\"sendform\"]/div/table/tbody/tr[2]/td/table/tbody/tr[1]/td[2]/input")
+	description_box = driver.find_element(By.XPATH,
+	                                      "//*[@id=\"sendform\"]/div/table/tbody/tr[2]/td/table/tbody/tr[2]/td[2]/input")
+	post_box = driver.find_element(By.ID, "fullreply")
+	title_box.send_keys(thread_title)
+	description_box.send_keys(thread_description)
+	post_box.send_keys(post_content)
+	if locked:
+		lock = driver.find_element(By.XPATH,
+		                           "//*[@id=\"sendform\"]/div/table/tbody/tr[2]/td/table/tbody/tr["
+		                           "6]/td/table/tbody/tr/td[1]/input")
+		lock.send_keys(Keys.ENTER)
+		lock.click()
+	if pinned:
+		pin = driver.find_element(By.XPATH,
+		                          "//*[@id=\"sendform\"]/div/table/tbody/tr[2]/td/table/tbody/tr["
+		                          "6]/td/table/tbody/tr/td[2]/input")
+		pin.send_keys(Keys.ENTER)
+		pin.click()
+	create = driver.find_element(By.XPATH, "//*[@id=\"sendform\"]/div/table/tbody/tr[2]/td/table/tbody/tr[7]/td/input")
+	create.click()
 
 
 def read_thread(forum, thread_id):
-    # use old_read_thread
-    pass
+	# use old_read_thread
+	pass
 
 
 def navigate_thread(forum, thread_id):
-    driver = forum.driver
-    url = f"ndimforums.com/{forum.subdomain}/thread.asp?threadid={thread_id}"
-    driver.get(url)
+	driver = forum.driver
+	url = f"ndimforums.com/{forum.subdomain}/thread.asp?threadid={thread_id}"
+	driver.get(url)
 
 
 def make_post(forum, post_content, thread_id=None):
-    driver = forum.driver
-    thread = f"ndimforums.com/{forum.subdomain}/thread.asp?threadid={thread_id}"
-    if (thread_id) and (thread not in driver.current_url):
-        navigate_thread(forum, thread_id)
-    text_box = driver.find_element(By.ID, "fastreply")
-    reply_button = driver.find_element(By.CSS_SELECTOR, '.buttonstyle:nth-child(3)')
-    text_box.send_keys(post_content)
-    reply_button.send_keys(Keys.ENTER)
+	driver = forum.driver
+	thread = f"ndimforums.com/{forum.subdomain}/thread.asp?threadid={thread_id}"
+	if (thread_id) and (thread not in driver.current_url):
+		navigate_thread(forum, thread_id)
+	text_box = driver.find_element(By.ID, "fastreply")
+	reply_button = driver.find_element(By.CSS_SELECTOR, '.buttonstyle:nth-child(3)')
+	text_box.send_keys(post_content)
+	reply_button.send_keys(Keys.ENTER)
 
 
 def read_post(forum, thread_id, post_num, pp):
-    # use get_post_content_with_time
-    pass
+	# use get_post_content_with_time
+	pass
 
 
 ###---ADMIN CP---###
 
 def goto_admin_cp(forum):
-    if '/Admin/admincp.asp' not in forum.driver.current_url:
-        try:
-            login(forum, forum.bot, admin=True)
-        except:
-            forum.driver.get(f"http://www.ndimforums.com/{forum.subdomain}/Admin/admincp.asp")
-    time.sleep(1)
+	if '/Admin/admincp.asp' not in forum.driver.current_url:
+		try:
+			login(forum, forum.bot, admin=True)
+		except:
+			forum.driver.get(f"http://www.ndimforums.com/{forum.subdomain}/Admin/admincp.asp")
+	time.sleep(1)
 
 
 def navigate_in_admin_cp(forum, menu_item):
-    goto_admin_cp(forum)
-    driver = forum.driver
-    driver.switch_to.default_content()
-    link = driver.find_element(By.LINK_TEXT, menu_item)
-    link.send_keys(Keys.ENTER)
-    iframe = driver.find_elements(By.TAG_NAME, 'iframe')[0]
-    driver.switch_to.frame(iframe)
+	goto_admin_cp(forum)
+	driver = forum.driver
+	driver.switch_to.default_content()
+	link = driver.find_element(By.LINK_TEXT, menu_item)
+	link.send_keys(Keys.ENTER)
+	iframe = driver.find_elements(By.TAG_NAME, 'iframe')[0]
+	driver.switch_to.frame(iframe)
+
 
 def navigate_news_fader(forum: Forum):
-    navigate_in_admin_cp(forum, "News Fader")
+	navigate_in_admin_cp(forum, "News Fader")
+
 
 async def set_news_fader(forum: Forum, news_fader: str = None):
-    async with browser_lock:
-        try:
-            navigate_news_fader(forum)
-            driver = forum.driver
-            attempts = 0
-            while attempts < 5:
-                try:
-                    time.sleep(0.5)
-                    textbox = driver.find_element(By.NAME, "fadertext")
-                    break
-                except:
-                    navigate_news_fader(forum)
-                    attempts = attempts + 1
-            if news_fader:
-                textbox.clear()
-                textbox.send_keys(news_fader)
-                on_button = driver.find_element(By.CSS_SELECTOR, 'input[name="donoff"][value="on"]')
-                on_button.click()
-            else:
-                off_button = driver.find_element(By.CSS_SELECTOR, 'input[name="donoff"][value="off"]')
-                off_button.click()
-            save = driver.find_element(By.CSS_SELECTOR, 'input.buttonstyle[value="Save"]')
-            save.click()
-        except Exception as e:
-            print(f"Error changing news fader: {e}")
+	async with browser_lock:
+		try:
+			navigate_news_fader(forum)
+			driver = forum.driver
+			attempts = 0
+			while attempts < 5:
+				try:
+					time.sleep(0.5)
+					textbox = driver.find_element(By.NAME, "fadertext")
+					break
+				except:
+					navigate_news_fader(forum)
+					attempts = attempts + 1
+			if news_fader:
+				textbox.clear()
+				textbox.send_keys(news_fader)
+				on_button = driver.find_element(By.CSS_SELECTOR, 'input[name="donoff"][value="on"]')
+				on_button.click()
+			else:
+				off_button = driver.find_element(By.CSS_SELECTOR, 'input[name="donoff"][value="off"]')
+				off_button.click()
+			save = driver.find_element(By.CSS_SELECTOR, 'input.buttonstyle[value="Save"]')
+			save.click()
+		except Exception as e:
+			print(f"Error changing news fader: {e}")
 
 
 def navigate_masks(forum: Forum):
-    navigate_in_admin_cp(forum, "Forum Masks")
+	navigate_in_admin_cp(forum, "Forum Masks")
 
 
 def create_mask(forum, mask_name, dictionary):
-    """
-    Create a mask in the forum.
+	"""
+	Create a mask in the forum.
 
-    Args:
-        forum (Forum): The forum object.
-        mask_name (str): The name of the mask to be created.
-        dictionary (dict): A dictionary containing the mask values.
+	Args:
+		forum (Forum): The forum object.
+		mask_name (str): The name of the mask to be created.
+		dictionary (dict): A dictionary containing the mask values.
 
-    Returns:
-        None
-    """
-    navigate_masks(forum)
-    driver = forum.driver
-    # test_dict = {
-    #	"my forum": "",
-    #	"subforum": "",
-    #	"another forum": "v",
-    #	"unique name": "vrc"
-    # }
-    # v = view, r = reply, c = create
-    add_button = driver.find_element(By.XPATH, "//*[@id=\"admin0\"]/table/tbody/tr[2]/td/table/tbody/tr/td/input")
-    add_button.click()
-    textbox = driver.find_element(By.CLASS_NAME, "textboxstyle")
-    textbox.send_keys(mask_name)
-    save = driver.find_element(By.XPATH, "//*[@id=\"admin0\"]/table/tbody/tr[9]/td/table/tbody/tr/td/input[4]")
-    save.click()
-    edit_mask(forum, mask_name, dictionary)
+	Returns:
+		None
+	"""
+	navigate_masks(forum)
+	driver = forum.driver
+	# test_dict = {
+	#	"my forum": "",
+	#	"subforum": "",
+	#	"another forum": "v",
+	#	"unique name": "vrc"
+	# }
+	# v = view, r = reply, c = create
+	add_button = driver.find_element(By.XPATH, "//*[@id=\"admin0\"]/table/tbody/tr[2]/td/table/tbody/tr/td/input")
+	add_button.click()
+	textbox = driver.find_element(By.CLASS_NAME, "textboxstyle")
+	textbox.send_keys(mask_name)
+	save = driver.find_element(By.XPATH, "//*[@id=\"admin0\"]/table/tbody/tr[9]/td/table/tbody/tr/td/input[4]")
+	save.click()
+	edit_mask(forum, mask_name, dictionary)
 
 
 def edit_mask(forum, mask_name, dictionary, overwrite=False):
-    """
-    Edits a mask on the forum.
+	"""
+	Edits a mask on the forum.
 
-    Parameters:
-        forum (Forum): The forum object.
-        mask_name (str): The name of the mask to edit.
-        dictionary (dict): A dictionary containing the forum titles as keys and the desired permissions as values.
-            Each value is a string containing the characters v, r, and/or c.
-            V = View
-            R = Reply
-            C = Create Thread
-            If a character appears in the string, that permission will be granted.
-            e.g. "vr" will grant "View" and "Reply" permissions, but not "Create Thread."
-            A blank string will grant no permissions.
-        overwrite (bool, optional): Whether to overwrite and remove existing permissions not specified by the dictionary keys.
-            If set to True, this is equivalent to setting all other permissions as blank/not allowed for any forum not specified in the dictionary.
-            Defaults to False.
-    """
-    # from masks page, locate and click edit button
-    driver = forum.driver
-    navigate_masks(forum)
-    n = 1
-    while True:
-        try:
-            ele = driver.find_element(By.XPATH,
-                                      f"//*[@id=\"admin0\"]/table/tbody/tr[4]/td/table/tbody/tr[{n}]/td[1]").text
-            if ele == mask_name:
-                break
-        except NoSuchElementException:
-            print("mask not found")
-            break
-        n = n + 1
-    edit_button = driver.find_element(By.XPATH,
-                                      f"//*[@id=\"admin0\"]/table/tbody/tr[4]/td/table/tbody/tr[{n}]/td[2]/input")
-    edit_button.click()
-    # test_dict = {
-    #	"my forum": "",
-    #	"subforum": "",
-    #	"another forum": "v",
-    #	"unique name": "vrc"
-    # }
-    # v = view, r = reply, c = create
-    # from edit mask page, locate elements
-    n = 1
-    j = 6
-    headers = []
-    driver.implicitly_wait(0.1)
-    while True:
-        try:
-            ele = driver.find_element(By.XPATH,
-                                      f"// *[ @ id = \"admin0\"] / table / tbody / tr[{j}] / td / table / tbody / tr[{n}] / td[1]").text
-            headers.append(ele.lower())
-            n = n + 1
-        except NoSuchElementException:
-            if n == 1:
-                break
-            else:
-                n = 1
-                j = j + 2
-    driver.implicitly_wait(1)
-    # select masks
-    for forum_title in headers:
-        for key, value in dictionary.items():
-            if key in forum_title:  # this has a definition
-                red_cell = "rgba(153, 51, 51, 1)"
-                n = headers.index(forum_title) + 1
-                row = str(n)
-                view = driver.find_element(By.XPATH, f"// *[ @ id = \"readcell{row}\"]")
-                reply = driver.find_element(By.XPATH, f"// *[ @ id = \"replycell{row}\"]")
-                create = driver.find_element(By.XPATH, f"// *[ @ id = \"createcell{row}\"]")
-                if "v" in value:  # view should be green
-                    if view.value_of_css_property("background-color") == red_cell:  # but is red
-                        view.click()  # so toggle
-                else:  # view should be red
-                    if view.value_of_css_property("background-color") != red_cell:  # but is green
-                        view.click()  # so toggle
-                if "r" in value:
-                    if reply.value_of_css_property("background-color") == red_cell:
-                        reply.click()
-                else:
-                    if reply.value_of_css_property("background-color") != red_cell:
-                        reply.click()
-                if "c" in value:
-                    if create.value_of_css_property("background-color") == red_cell:
-                        create.click()
-                else:
-                    if create.value_of_css_property("background-color") != red_cell:
-                        create.click()
-            elif overwrite and key not in forum_title:
-                pass  # TODO: finish overwrite masks
-    save = driver.find_element(By.CLASS_NAME, "buttonstyle")
-    save.click()
+	Parameters:
+		forum (Forum): The forum object.
+		mask_name (str): The name of the mask to edit.
+		dictionary (dict): A dictionary containing the forum titles as keys and the desired permissions as values.
+			Each value is a string containing the characters v, r, and/or c.
+			V = View
+			R = Reply
+			C = Create Thread
+			If a character appears in the string, that permission will be granted.
+			e.g. "vr" will grant "View" and "Reply" permissions, but not "Create Thread."
+			A blank string will grant no permissions.
+		overwrite (bool, optional): Whether to overwrite and remove existing permissions not specified by the dictionary keys.
+			If set to True, this is equivalent to setting all other permissions as blank/not allowed for any forum not specified in the dictionary.
+			Defaults to False.
+	"""
+	# from masks page, locate and click edit button
+	driver = forum.driver
+	navigate_masks(forum)
+	n = 1
+	while True:
+		try:
+			ele = driver.find_element(By.XPATH,
+			                          f"//*[@id=\"admin0\"]/table/tbody/tr[4]/td/table/tbody/tr[{n}]/td[1]").text
+			if ele == mask_name:
+				break
+		except NoSuchElementException:
+			print("mask not found")
+			break
+		n = n + 1
+	edit_button = driver.find_element(By.XPATH,
+	                                  f"//*[@id=\"admin0\"]/table/tbody/tr[4]/td/table/tbody/tr[{n}]/td[2]/input")
+	edit_button.click()
+	# test_dict = {
+	#	"my forum": "",
+	#	"subforum": "",
+	#	"another forum": "v",
+	#	"unique name": "vrc"
+	# }
+	# v = view, r = reply, c = create
+	# from edit mask page, locate elements
+	n = 1
+	j = 6
+	headers = []
+	driver.implicitly_wait(0.1)
+	while True:
+		try:
+			ele = driver.find_element(By.XPATH,
+			                          f"// *[ @ id = \"admin0\"] / table / tbody / tr[{j}] / td / table / tbody / tr[{n}] / td[1]").text
+			headers.append(ele.lower())
+			n = n + 1
+		except NoSuchElementException:
+			if n == 1:
+				break
+			else:
+				n = 1
+				j = j + 2
+	driver.implicitly_wait(1)
+	# select masks
+	for forum_title in headers:
+		for key, value in dictionary.items():
+			if key in forum_title:  # this has a definition
+				red_cell = "rgba(153, 51, 51, 1)"
+				n = headers.index(forum_title) + 1
+				row = str(n)
+				view = driver.find_element(By.XPATH, f"// *[ @ id = \"readcell{row}\"]")
+				reply = driver.find_element(By.XPATH, f"// *[ @ id = \"replycell{row}\"]")
+				create = driver.find_element(By.XPATH, f"// *[ @ id = \"createcell{row}\"]")
+				if "v" in value:  # view should be green
+					if view.value_of_css_property("background-color") == red_cell:  # but is red
+						view.click()  # so toggle
+				else:  # view should be red
+					if view.value_of_css_property("background-color") != red_cell:  # but is green
+						view.click()  # so toggle
+				if "r" in value:
+					if reply.value_of_css_property("background-color") == red_cell:
+						reply.click()
+				else:
+					if reply.value_of_css_property("background-color") != red_cell:
+						reply.click()
+				if "c" in value:
+					if create.value_of_css_property("background-color") == red_cell:
+						create.click()
+				else:
+					if create.value_of_css_property("background-color") != red_cell:
+						create.click()
+			elif overwrite and key not in forum_title:
+				pass  # TODO: finish overwrite masks
+	save = driver.find_element(By.CLASS_NAME, "buttonstyle")
+	save.click()
 
 
 def read_mask(forum, user):
-    pass
+	pass
 
 
 def navigate_groups(forum):
-    navigate_in_admin_cp(forum, "Group Manager")
+	navigate_in_admin_cp(forum, "Group Manager")
 
 
 def create_group(forum):
-    pass
+	pass
 
 
 def edit_group(forum):
-    pass
+	pass
 
 
 def read_group(forum):
-    pass
+	pass
 
 
 def preregister_member(forum):
-    navigate_in_admin_cp(forum, "Pre-register Member")
+	navigate_in_admin_cp(forum, "Pre-register Member")
 
 
 # pre-make the User class
 
 
 def return_user_obj(_id: int):
-    pass
+	pass
 
 
 def navigate_edit_member(forum):
-    navigate_in_admin_cp(forum, "Member Editor")
+	navigate_in_admin_cp(forum, "Member Editor")
 
 
 def search_member(forum):
-    navigate_edit_member(forum)
+	navigate_edit_member(forum)
 
 
 def edit_member_username():
-    pass
+	pass
 
 
 def edit_member_display_name():
-    pass
+	pass
 
 
 def edit_member_password():
-    pass
+	pass
 
 
 def edit_member_group(forum: Forum, user: User, group: Group):
-    pass
+	pass
 
 
 def edit_member_masks(forum: Forum, user: User, masks: list[Mask]):
-    pass
+	pass
 
 
 def edit_member_email():
-    pass
+	pass
 
 
 def edit_member_title():
-    pass
+	pass
 
 
 def edit_member_post_count():
-    pass
+	pass
 
 
 def edit_member_avatar():
-    pass
+	pass
 
 
 def edit_member_signature():
-    pass
+	pass
 
 
 def navigate_edit_filters(forum):
-    navigate_in_admin_cp(forum, "Word Filters")
+	navigate_in_admin_cp(forum, "Word Filters")
+
 
 def export_filters(forum):
-    navigate_edit_filters(forum)
-    driver = forum.driver
-    time.sleep(1)
-    with open("filters.txt", "a+") as file:
-        i = 1
-        inarow = 0
-        # TODO: better way of determining if we've reached the end
-        # If filters are deleted at all, the try block will fail because i is not incremented
-        # For now we assume if we fail 5 in a row we're at the end, but this can't be guaranteed
-        while i < 1000:
-            try:
-                word = driver.find_element(By.NAME, f"wordtoedit{i}").get_attribute("value")
-                print(word)
-                replacement = driver.find_element(By.NAME, f"changesto{i}").get_attribute("value")
-                print(replacement)
-                file.write(word + "," + replacement + "\n")
-                i = i + 1
-                inarow = 0
-            except:
-                print(f"no {i}")
-                i = i + 1
-                inarow = inarow + 1
-                if inarow > 5:
-                    print("Assumed end")
-                    break
-                else:
-                    continue
-    print("Done export")
+	navigate_edit_filters(forum)
+	driver = forum.driver
+	time.sleep(1)
+	with open("filters.txt", "a+") as file:
+		i = 1
+		inarow = 0
+		# TODO: better way of determining if we've reached the end
+		# If filters are deleted at all, the try block will fail because i is not incremented
+		# For now we assume if we fail 5 in a row we're at the end, but this can't be guaranteed
+		while i < 1000:
+			try:
+				word = driver.find_element(By.NAME, f"wordtoedit{i}").get_attribute("value")
+				print(word)
+				replacement = driver.find_element(By.NAME, f"changesto{i}").get_attribute("value")
+				print(replacement)
+				file.write(word + "," + replacement + "\n")
+				i = i + 1
+				inarow = 0
+			except:
+				print(f"no {i}")
+				i = i + 1
+				inarow = inarow + 1
+				if inarow > 5:
+					print("Assumed end")
+					break
+				else:
+					continue
+	print("Done export")
 
 
 def clear_filters(forum):
-    navigate_edit_filters(forum)
-    driver = forum.driver
-    delete_buttons = driver.find_elements(By.XPATH, "//input[@type='Button'][@value='Delete']")
-    for delete_button in delete_buttons:
-        # Click the Delete button
-        delete_button.click()
+	navigate_edit_filters(forum)
+	driver = forum.driver
+	delete_buttons = driver.find_elements(By.XPATH, "//input[@type='Button'][@value='Delete']")
+	for delete_button in delete_buttons:
+		# Click the Delete button
+		delete_button.click()
 
-        # Wait for the confirmation alert to appear
-        WebDriverWait(driver, 10).until(EC.alert_is_present())
+		# Wait for the confirmation alert to appear
+		WebDriverWait(driver, 10).until(EC.alert_is_present())
 
-        # Switch to the alert and click OK (accept)
-        alert = Alert(driver)
-        alert.accept()
-    print("Done clear")
-
+		# Switch to the alert and click OK (accept)
+		alert = Alert(driver)
+		alert.accept()
+	print("Done clear")
 
 
 def add_filter(word_to_change, new_word, forum, mode=0):
-    # mode 0 is Full Word Only, mode 1 is Containing Word
-    """
-    Adds a filter to the forum's settings.
+	# mode 0 is Full Word Only, mode 1 is Containing Word
+	"""
+	Adds a filter to the forum's settings.
 
-    Parameters:
-        word_to_change (str): The word to be changed by the filter.
-        new_word (str): The new word that will replace the old word in the filter.
-        forum (Forum): The forum object representing the forum to add the filter to.
-        mode (int, optional): The mode of the filter. 0 for Full Word Only, 1 for Containing Word.
-            Defaults to 0.
+	Parameters:
+		word_to_change (str): The word to be changed by the filter.
+		new_word (str): The new word that will replace the old word in the filter.
+		forum (Forum): The forum object representing the forum to add the filter to.
+		mode (int, optional): The mode of the filter. 0 for Full Word Only, 1 for Containing Word.
+			Defaults to 0.
 
-    Returns:
-        None
-    """
-    goto_admin_cp(forum)
-    driver = forum.driver
-    if "Add Filters" not in driver.page_source:
-        navigate_edit_filters(forum)
-    text_boxes = driver.find_elements(By.XPATH, "//input[@type='text']")
-    word1 = text_boxes[0]
-    word1.clear()
-    word1.send_keys(word_to_change)
-    word2 = text_boxes[1]
-    word2.clear()
-    word2.send_keys(new_word)
-    print(word_to_change + " -> " + new_word)
-    button = driver.find_elements(By.XPATH, "//input[@type='Submit']")[0]
-    selector = Select(driver.find_elements(By.CLASS_NAME, "selectstyle")[0])
-    selector.select_by_value(str(mode))
-    button.send_keys(Keys.ENTER)
+	Returns:
+		None
+	"""
+	goto_admin_cp(forum)
+	driver = forum.driver
+	if "Add Filters" not in driver.page_source:
+		navigate_edit_filters(forum)
+	text_boxes = driver.find_elements(By.XPATH, "//input[@type='text']")
+	word1 = text_boxes[0]
+	word1.clear()
+	word1.send_keys(word_to_change)
+	word2 = text_boxes[1]
+	word2.clear()
+	word2.send_keys(new_word)
+	print(word_to_change + " -> " + new_word)
+	button = driver.find_elements(By.XPATH, "//input[@type='Submit']")[0]
+	selector = Select(driver.find_elements(By.CLASS_NAME, "selectstyle")[0])
+	selector.select_by_value(str(mode))
+	button.send_keys(Keys.ENTER)
 
 
 def remove_filters(forum):
-    pass
+	pass
 
 
 def add_filters(filter_dictionary: dict, forum: Forum, mode: int = 0):
-    # filters should be in key value pairs
-    for item in filter_dictionary:
-        add_filter(item, filter_dictionary[item], forum, mode)
+	# filters should be in key value pairs
+	for item in filter_dictionary:
+		add_filter(item, filter_dictionary[item], forum, mode)
 
 
 async def add_filters_from_file(forum, filename, delimiter):
-    async with browser_lock:
-        with open(filename) as file:
-            for line in file:
-                word_to_change = line.split(delimiter)[0].strip()
-                filter = line.split(delimiter)[1].strip()
-                add_filter(word_to_change, filter, forum)
-                time.sleep(0.2)
+	async with browser_lock:
+		with open(filename) as file:
+			for line in file:
+				word_to_change = line.split(delimiter)[0].strip()
+				filter = line.split(delimiter)[1].strip()
+				add_filter(word_to_change, filter, forum)
+				time.sleep(0.2)
 
 
 def overwrite_filters():
-    pass
+	pass
 
 
-def old_read_thread(url, driver, pp=50): #posts per page must match bot's user account setting on the board
-    # Exports posts from a thread to a file
-    sep = "\t"
-    time_list = []
-    newfile = "{}.txt".format(
-        datetime.datetime.now().strftime("%Y-%m-%d %H%M%S"))
-    thread_id = input("thread id: ")
-    print("Please wait...", flush=True)
-    post_contents = []
-    post_headers = []
-    post_users = []
-    for current_page in range(1, 100):
-        driver.get("http://www.ndimforums.com/{0}/thread.asp?threadid={1}&pagenum={2}&pp={3}".format(url, thread_id,
-                                                                                                     current_page,
-                                                                                                     str(pp)))
-        for post_num_this_page in range(1, pp + 1):
-            try:
-                if post_num_this_page == 1:
-                    this_user = driver.find_element(By.CSS_SELECTOR, ('.profile:nth-child(3) span')).text
-                else:
-                    offset = post_num_this_page * 4 - 2
-                    this_user = driver.find_element(By.CSS_SELECTOR,
-                                                    (f'tr:nth-child({str(offset)}) .profile span')).text
-                post_num_total = post_num_this_page + (pp * (current_page - 1))
-                post_time_unformatted = driver.find_element(By.CSS_SELECTOR,
-                                                            (f'#postheada{str(post_num_this_page)} > b')).text
-                post_time_formatted = parse_time(post_time_unformatted)
-                post_content = driver.find_element(By.ID, (f"post{post_num_this_page}")).text
-                line = f"{this_user:<14}{str(post_time_formatted):<24}Post #{str(post_num_total):<8}{post_content}"
-                post_users.append(this_user)
-                time_list.append(post_time_formatted)
-                post_headers.append(post_num_total)
-                post_contents.append(post_content)
-                with open(newfile, "a") as file:
-                    file.write(f"{this_user}{sep}{post_time_formatted}{sep}{post_num_total}{sep}{post_content}" + "\n")
-                print(line, flush=True)
-            except:
-                old_read_thread(url, driver)
-    return newfile
+def old_read_thread(url, driver, pp=50):  # posts per page must match bot's user account setting on the board
+	# Exports posts from a thread to a file
+	sep = "\t"
+	time_list = []
+	newfile = "{}.txt".format(
+		datetime.datetime.now().strftime("%Y-%m-%d %H%M%S"))
+	thread_id = input("thread id: ")
+	print("Please wait...", flush=True)
+	post_contents = []
+	post_headers = []
+	post_users = []
+	for current_page in range(1, 100):
+		driver.get("http://www.ndimforums.com/{0}/thread.asp?threadid={1}&pagenum={2}&pp={3}".format(url, thread_id,
+		                                                                                             current_page,
+		                                                                                             str(pp)))
+		for post_num_this_page in range(1, pp + 1):
+			try:
+				if post_num_this_page == 1:
+					this_user = driver.find_element(By.CSS_SELECTOR, ('.profile:nth-child(3) span')).text
+				else:
+					offset = post_num_this_page * 4 - 2
+					this_user = driver.find_element(By.CSS_SELECTOR,
+					                                (f'tr:nth-child({str(offset)}) .profile span')).text
+				post_num_total = post_num_this_page + (pp * (current_page - 1))
+				post_time_unformatted = driver.find_element(By.CSS_SELECTOR,
+				                                            (f'#postheada{str(post_num_this_page)} > b')).text
+				post_time_formatted = parse_time(post_time_unformatted)
+				post_content = driver.find_element(By.ID, (f"post{post_num_this_page}")).text
+				line = f"{this_user:<14}{str(post_time_formatted):<24}Post #{str(post_num_total):<8}{post_content}"
+				post_users.append(this_user)
+				time_list.append(post_time_formatted)
+				post_headers.append(post_num_total)
+				post_contents.append(post_content)
+				with open(newfile, "a") as file:
+					file.write(f"{this_user}{sep}{post_time_formatted}{sep}{post_num_total}{sep}{post_content}" + "\n")
+				print(line, flush=True)
+			except:
+				old_read_thread(url, driver)
+	return newfile
+
 
 async def log_active_users(forum, filename="db/activity.log", sep="|"):
-    # export from Active Users page to activity log
-    ips = []
-    async with browser_lock:
-        dt = datetime.datetime
-        driver = forum.driver
-        driver.get(forum.url + '/activeuser.asp')
-        current_time = dt.now().strftime("%Y-%m-%d %H:%M:%S")
-        arr = []
-        i = 2
-        while True:
-            try:
-                anon = False
-                display_name = driver.find_element(By.CSS_SELECTOR,
-                                                   f'.innertable tr:nth-child({i}) > .innercontent:nth-child(1)').text
-                try:
-                    profile_url = driver.find_element(By.CSS_SELECTOR,
-                                                      f'.innertable tr:nth-child({i}) > .innercontent:nth-child(1) a').get_attribute(
-                        'href')
-                    #print(profile_url)
-                    user_id = profile_url.split("=")[-1]
-                except:
-                    user_id = "Guest"
-                if display_name.startswith("*"):
-                    anon = True
-                    display_name = display_name.replace("*", "")
-                last_action = driver.find_element(By.CSS_SELECTOR,
-                                                  f'.innertable tr:nth-child({i}) > .innercontent:nth-child(2)').text
-                last_activity = parse_time(driver.find_element(By.CSS_SELECTOR,
-                                                               f'tr:nth-child({i}) > .innercontent:nth-child(3)').text).strftime(
-                    "%Y-%m-%d %H:%M:%S")
-                ip_address = driver.find_element(By.CSS_SELECTOR,
-                                                 f'tr:nth-child({i}) > .innercontent:nth-child(4)').text
-                arr.append([current_time, display_name, last_action, last_activity, ip_address])
-                ips.append(f"{user_id}{sep}{ip_address}")
-                i += 1
-                display_name = display_name.replace(sep, "")
-                last_action = last_action.replace(sep, "")
-                with open(filename, "a", encoding="utf-8", errors="replace") as file:
-                    file.write(
-                        f"{current_time}{sep}{display_name}{sep}{user_id}{sep}{last_action}{sep}{last_activity}{sep}{ip_address}{sep}{anon}\n")
-            except NoSuchElementException:
-                break
-        f = '\n'.join(ips)
-        with open("db/activity_last_update.log", "w+", encoding="utf-8", errors="replace") as file:
-            file.write(f)
-        print(f"[green]\\[{current_time}][/] [yellow]\\[ndimtools][/]: Activity log updated.")
-    return ips
+	# export from Active Users page to activity log
+	ips = []
+	async with browser_lock:
+		dt = datetime.datetime
+		driver = forum.driver
+		driver.get(forum.url + '/activeuser.asp')
+		current_time = dt.now().strftime("%Y-%m-%d %H:%M:%S")
+		arr = []
+		i = 2
+		while True:
+			try:
+				anon = False
+				display_name = driver.find_element(By.CSS_SELECTOR,
+				                                   f'.innertable tr:nth-child({i}) > .innercontent:nth-child(1)').text
+				try:
+					profile_url = driver.find_element(By.CSS_SELECTOR,
+					                                  f'.innertable tr:nth-child({i}) > .innercontent:nth-child(1) a').get_attribute(
+						'href')
+					# print(profile_url)
+					user_id = profile_url.split("=")[-1]
+				except:
+					user_id = "Guest"
+				if display_name.startswith("*"):
+					anon = True
+					display_name = display_name.replace("*", "")
+				last_action = driver.find_element(By.CSS_SELECTOR,
+				                                  f'.innertable tr:nth-child({i}) > .innercontent:nth-child(2)').text
+				last_activity = parse_time(driver.find_element(By.CSS_SELECTOR,
+				                                               f'tr:nth-child({i}) > .innercontent:nth-child(3)').text).strftime(
+					"%Y-%m-%d %H:%M:%S")
+				ip_address = driver.find_element(By.CSS_SELECTOR,
+				                                 f'tr:nth-child({i}) > .innercontent:nth-child(4)').text
+				arr.append([current_time, display_name, last_action, last_activity, ip_address])
+				ips.append(f"{user_id}{sep}{ip_address}")
+				i += 1
+				display_name = display_name.replace(sep, "")
+				last_action = last_action.replace(sep, "")
+				with open(filename, "a", encoding="utf-8", errors="replace") as file:
+					file.write(
+						f"{current_time}{sep}{display_name}{sep}{user_id}{sep}{last_action}{sep}{last_activity}{sep}{ip_address}{sep}{anon}\n")
+			except NoSuchElementException:
+				break
+		f = '\n'.join(ips)
+		with open("db/activity_last_update.log", "w+", encoding="utf-8", errors="replace") as file:
+			file.write(f)
+		print(f"[green]\\[{current_time}][/] [yellow]\\[ndimtools][/]: Activity log updated.")
+	return ips
 
 
 async def get_active_topics(forum, time_limit=120, mask=None):
-    """Navigate to Active Topics with an optional viewAs mask, and return all recent posts within the time limit."""
-    async with browser_lock:
-        driver = forum.driver
-        if mask is None:
-            driver.get(forum.url + '/activetopics.asp')
-        else:
-            driver.get(forum.url + f"/activetopics.asp?viewAs={mask}")
-        i = 2
-        n = 1
-        posts = []
-        while True:
-            try:
-                # TODO: these finders get finnicky between different boards, find something more reliable
-                author = driver.find_element(By.CSS_SELECTOR, f"tr:nth-child({i}) > .forumbody{n}:nth-child(6) > .profile").text
-                time = driver.find_element(By.CSS_SELECTOR, f"tr:nth-child({i}) > .forumbody{n}:nth-child(6)").text
-                time = time.replace(author,"").strip()
-                time_as_dt = parse_time(time)
-                if time_as_dt < datetime.datetime.now() - datetime.timedelta(minutes=time_limit):
-                    break
-                title = driver.find_element(By.CSS_SELECTOR, f"tr:nth-child({i}) > .forumbody{n}:nth-child(2) > a").text
-                url = driver.find_element(By.CSS_SELECTOR, f"tr:nth-child({i}) > .forumbody{n}:nth-child(2) > a").get_attribute("href")
-                url = url.split("&")[0]
-                post = Post(title=title, author=author, time=time_as_dt, url=url)
-                posts.append(post)
-                if n == 1:
-                    n = 0
-                elif n == 0:
-                    n = 1
-                i += 1
-            except Exception as e:
-                traceback.print_exc()
-                break
-        return posts
+	"""Navigate to Active Topics with an optional viewAs mask, and return all recent posts within the time limit."""
+	async with browser_lock:
+		driver = forum.driver
+		if mask is None:
+			driver.get(forum.url + '/activetopics.asp')
+		else:
+			driver.get(forum.url + f"/activetopics.asp?viewAs={mask}")
+		i = 2
+		n = 1
+		posts = []
+		while True:
+			try:
+				# TODO: these finders get finnicky between different boards, find something more reliable
+				author = driver.find_element(By.CSS_SELECTOR,
+				                             f"tr:nth-child({i}) > .forumbody{n}:nth-child(6) > .profile").text
+				time = driver.find_element(By.CSS_SELECTOR, f"tr:nth-child({i}) > .forumbody{n}:nth-child(6)").text
+				time = time.replace(author, "").strip()
+				time_as_dt = parse_time(time)
+				if time_as_dt < datetime.datetime.now() - datetime.timedelta(minutes=time_limit):
+					break
+				title = driver.find_element(By.CSS_SELECTOR, f"tr:nth-child({i}) > .forumbody{n}:nth-child(2) > a").text
+				url = driver.find_element(By.CSS_SELECTOR,
+				                          f"tr:nth-child({i}) > .forumbody{n}:nth-child(2) > a").get_attribute("href")
+				url = url.split("&")[0]
+				post = Post(title=title, author=author, time=time_as_dt, url=url)
+				posts.append(post)
+				if n == 1:
+					n = 0
+				elif n == 0:
+					n = 1
+				i += 1
+			except Exception as e:
+				traceback.print_exc()
+				break
+		return posts
 
 
 async def get_post_content_with_time(forum, post):
-    async with browser_lock:
-        try:
-            driver = forum.driver
-            driver.get(post.url)
-            i = 1
-            while True:
-                try:
-                    time_unformatted = driver.find_element(By.CSS_SELECTOR, f"#postheada{i} > b").text
-                    time = parse_time(time_unformatted)
-                    time_str = str(time)
-                    time_l = time_str.split(":")
-                    time_no_sec = ":".join([time_l[0], time_l[1]])
-                    post_time_str = str(post.time)
-                    post_time_l = post_time_str.split(":")
-                    post_time_no_sec = ":".join([post_time_l[0], post_time_l[1]])
-                    if time_no_sec.strip() == post_time_no_sec.strip():
-                        post.content = driver.find_element(By.ID, f"post{i}").text
-                        break
-                    i += 1 # TODO: breaks if it needs to go to next page
-                except Exception as e:
-                    print(e)
-                    raise Exception
-            return post
-        except Exception as e:
-            print(e)
-            raise Exception
+	async with browser_lock:
+		try:
+			driver = forum.driver
+			driver.get(post.url)
+			i = 1
+			while True:
+				try:
+					time_unformatted = driver.find_element(By.CSS_SELECTOR, f"#postheada{i} > b").text
+					time = parse_time(time_unformatted)
+					time_str = str(time)
+					time_l = time_str.split(":")
+					time_no_sec = ":".join([time_l[0], time_l[1]])
+					post_time_str = str(post.time)
+					post_time_l = post_time_str.split(":")
+					post_time_no_sec = ":".join([post_time_l[0], post_time_l[1]])
+					if time_no_sec.strip() == post_time_no_sec.strip():
+						post.content = driver.find_element(By.ID, f"post{i}").text
+						break
+					i += 1  # TODO: breaks if it needs to go to next page
+				except Exception as e:
+					print(e)
+					raise Exception
+			return post
+		except Exception as e:
+			print(e)
+			raise Exception
 
 
 async def main():
-    time1 = "5th Apr 2026 9:00:43 PM"
-    time2 = "Sunday 5th April 2026, 9:00:43 PM"
-    time3 = "04/05/2026 21:00:43"
-    print(parse_time(time1))
-    print(parse_time(time2))
-    print(parse_time(time3))
+	time1 = "5th Apr 2026 9:00:43 PM"
+	time2 = "Sunday 5th April 2026, 9:00:43 PM"
+	time3 = "04/05/2026 21:00:43"
+	print(parse_time(time1))
+	print(parse_time(time2))
+	print(parse_time(time3))
+
 
 if __name__ == "__main__":
-    asyncio.run(main())
+	asyncio.run(main())

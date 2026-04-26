@@ -8,3 +8,5 @@ passwords = {
     "board": "base64password==",
     "board2": "base64password2=="
 }
+# OpenAI token
+openai = 'TOKENHERE'

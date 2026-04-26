@@ -3,7 +3,6 @@
 import random
 import re
 
-
 HackerBongoCat = "<a:HackerBongoCat:1340904279577329676>"
 BLEHH_CAT = "<:BLEHH_CAT:1340904028522938380>"
 cat_whaaa = "<:cat_whaaa:1340902363896221708>"
@@ -72,9 +71,11 @@ output_shocked = [cat_spook, cat_whaaa, cat_wtf]
 output_sad = [catleave, sulking]
 output_angry = [isaidno, catNOO, cattogun, kitty_blush_knife, bunny_judge, uhhuh]
 
+
 def random_happy():
-    happy = happy_kaomojis + output_happy + output_excited + output_love
-    return random.choice(happy)
+	happy = happy_kaomojis + output_happy + output_excited + output_love
+	return random.choice(happy)
+
 
 # ---------------- flavor text defined here
 bot_name = "Salem the KITTY of CHAOS (ﾉ≧∀≦)ﾉ"

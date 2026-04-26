@@ -1,5 +1,5 @@
 # general commands
-#/ping, /choose, /flip, /roll
+# /ping, /choose, /flip, /roll
 
 import traceback
 
@@ -43,7 +43,8 @@ class General(commands.Cog):
 			match = re.fullmatch(r'(\d+)d(\d+)([+-]\d+)?', dice.lower().replace(' ', ''))
 			if not match:
 				await interaction.response.send_message(
-					'Format has to be in NdN, optionally with + or - modifier (e.g., 2d6, 1d20+3, 4d8-2)', ephemeral=True)
+					'Format has to be in NdN, optionally with + or - modifier (e.g., 2d6, 1d20+3, 4d8-2)',
+					ephemeral=True)
 				return
 
 			rolls = int(match.group(1))
@@ -66,6 +67,7 @@ class General(commands.Cog):
 				await interaction.response.send_message(res)
 		except:
 			print(traceback.format_exc())
+
 
 async def setup(bot):
 	await bot.add_cog(General(bot))

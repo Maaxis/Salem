@@ -1,3 +1,5 @@
+# starts the bot, also responds to events and triggers cogs to raect
+
 test = False
 
 #import importlib
@@ -19,6 +21,7 @@ bot.latest_message = None
 bot.temp_messages = ""
 bot.messages = ""
 bot.test = test
+bot.ai_ready = False
 
 # --------- Load cogs --------
 import cogs
