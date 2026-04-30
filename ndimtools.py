@@ -1,7 +1,6 @@
-# Selenium-based API for ndimforums.com, requires user account with password stored in secret.py
-
+# Selenium-based API for ndimforums.com. Most functions require a user account with password stored in secret.py
+import re
 import traceback
-
 from selenium.common import NoSuchElementException
 from selenium.webdriver.support.select import Select
 from selenium import webdriver
@@ -27,19 +26,12 @@ def return_password(subdomain):
 
 
 class Forum:
-	def __init__(self, subdomain: str, time_setting: int = 1, users: list['User'] = None, bot: 'Bot' = None):
-		"""
-		Initializes a new forum instance.
-
-		Args:
-			subdomain (str): The subdomain (e.g. "void")
-			time_setting (int, optional): The time setting for the forum (see time_setting.txt). Defaults to 1
-			users (type, optional): A list of Users. Defaults to None
-			bot (type, optional): User account for bot. Defaults None.
-		"""
+	def __init__(self, subdomain: str, users: list['User'] = None, bot: 'Bot' = None, driver=None):
 		self.subdomain = subdomain
-		self.driver = start_driver()
-		self.time_setting = time_setting  # see time_setting.txt for how to set this correctly
+		# we can pass in an existing driver to navigate between different forums. otherwise, start driver
+		self.driver = driver
+		if driver is None:
+			self.driver = start_driver()
 		self.url = "http://ndimforums.com/" + subdomain
 		self.users = users
 		self.bot = bot
@@ -58,19 +50,6 @@ class Post:
 class User:
 	def __init__(self, subdomain: str, _id: int = None, username: str = None, password: str = None,
 	             masks: list['Mask'] = None, avatar: str = None, display_name: str = None, group: 'Group' = None):
-		"""
-		Initializes a new instance of the class.
-
-		Args:
-			subdomain (str): The subdomain for the instance.
-			_id (int, optional): The ID for the instance. Defaults to None.
-			username (str, optional): The username for the instance. Defaults to None.
-			password (str, optional): The password for the instance. Defaults to None.
-			masks (list[Mask], optional): The masks for the instance. Defaults to None.
-			avatar (str, optional): The avatar for the instance. Defaults to None.
-			display_name (str, optional): The display name for the instance. Defaults to None.
-			group (Group, optional): The group for the instance. Defaults to None.
-		"""
 		self.subdomain = subdomain
 		self.id = _id  # id is not required since we can also premake the object for preregistering
 		self.username = username
@@ -133,6 +112,67 @@ def setup():  # use this for manual first-time logins
 	start_driver()
 
 
+def get_mem_wall(forum):
+	try:
+		results = _get_mem_wall(forum, 2)
+		if len(results) == 0:
+			results = _get_mem_wall(forum, 1)
+	except Exception:
+		traceback.print_exc()
+	return results
+
+
+def _get_mem_wall(forum, type=1):
+	# There are two common types of memory walls on NDIM games, we have separate methods for each
+	# type 1 = no movement on hover (HTML)
+	# type 2 = name follows cursor on hover (JavaScript)
+	results = []
+	driver = forum.driver
+	driver.get(forum.url)
+	wait = WebDriverWait(driver, 5)
+	if type == 1:
+		# html based
+		containers = wait.until(EC.presence_of_all_elements_located((By.CLASS_NAME, "middle")))
+		for item in containers:
+			try:
+				children = item.find_elements(By.XPATH, "./div")
+				if len(children) >= 2:
+					name = children[0].get_attribute("textContent").strip()
+					placement = children[1].get_attribute("textContent").strip()
+					results.append((name, placement))
+			except Exception as e:
+				traceback.print_exc()
+	elif type == 2:
+		# javascript based, get from page source
+		page_source = driver.page_source
+		pattern = r"wall\(\s*\d+\s*,\s*\d+\s*,\s*'[^']*'\s*,\s*'[^']*'\s*,\s*'([^']*)'\s*,\s*'([^']*)'"
+		matches = re.findall(pattern, page_source)
+		results = matches
+	# print(results)
+	return results
+
+
+def get_page_title(forum):
+	driver = forum.driver
+	driver.get(forum.url)
+	title = driver.title
+	return title
+
+
+def get_latest_post(forum):
+	# returns the first Last Post date it sees
+	driver = forum.driver
+	driver.get(forum.url)
+	element = driver.find_element(By.CLASS_NAME, "lastpost")
+	# get all text, split into lines, and take the last one
+	raw_text = element.text
+	lines = raw_text.split('\n')
+	date_string = lines[-1].strip().replace('"', '')
+	#print(date_string)  # Output: 28th Jan 2024 3:34:24 PM
+	time = parse_time(date_string)
+	return time
+
+
 def parse_time(unformatted_time):
 	"""Provide a time string from NDIM, returns a datetime object"""
 	# TODO: make compatible for all time settings
@@ -152,9 +192,9 @@ def parse_time(unformatted_time):
 	if "day" in unformatted_time:  # ignore mention of Sunday, remove comma
 		time = unformatted_time.split("day ")[1]
 		time = time.replace(",", "")
-		# time1 = "5th Apr 2026 9:00:43 PM"
-		# time2 = "5th April 2026 9:00:43 PM"
-		# time3 = "04/05/2026 21:00:43"
+	# time1 = "5th Apr 2026 9:00:43 PM"
+	# time2 = "5th April 2026 9:00:43 PM"
+	# time3 = "04/05/2026 21:00:43"
 	for month in months:
 		if month in time:
 			num_month = (months.index(month)) + 1
@@ -190,18 +230,6 @@ def parse_time(unformatted_time):
 
 
 def login(forum, user, admin=False):
-	"""
-	Logs in to the forum using the provided credentials.
-
-	Args:
-		forum (Forum): The forum object representing the forum to log in to.
-		user (Bot): The user object representing the user to log in as.
-		admin (bool, optional): A flag indicating whether to log in to the Admin CP.
-			Defaults to False.
-
-	Returns:
-		None
-	"""
 	driver = forum.driver
 	if admin:
 		driver.get(forum.url + '/Admin/admincp.asp')
@@ -217,16 +245,6 @@ def login(forum, user, admin=False):
 
 
 def navigate_forum(forum: Forum, forum_id):
-	"""
-	Navigates to a specific forum in the provided Forum object.
-
-	Args:
-		forum (Forum): The Forum object containing the necessary driver and URL.
-		forum_id (int): The ID of the forum to navigate to.
-
-	Returns:
-		None
-	"""
 	driver = forum.driver
 	url = f"ndimforums.com/{forum.subdomain}/forum.asp?forumid={forum_id}"
 	driver.get(url)
@@ -235,27 +253,9 @@ def navigate_forum(forum: Forum, forum_id):
 def make_thread(forum: Forum, forum_id: int, thread_title: str, post_content: str, thread_description: str = "",
                 locked: bool = False,
                 pinned: bool = False,
-                poll: bool = False, poll_question: str = "", poll_options: [str] = None, poll_num_of_options: int = 0,
+                poll: bool = False, poll_question: str = "", poll_options: [str] = None,
                 poll_num_of_votes: int = 0):
-	"""
-	Creates a new thread in the specified forum with the given parameters.
-
-	Args:
-		forum (Forum): The forum object representing the forum where the thread will be created.
-		forum_id (int): The ID of the forum where the thread will be created.
-		thread_title (str): The title of the new thread.
-		post_content (str): The content of the initial post in the thread.
-		thread_description (str, optional): The description of the new thread (default: "").
-		locked (bool, optional): Whether the new thread should be locked (default: False).
-		pinned (bool, optional): Whether the new thread should be pinned (default: False).
-		poll (bool, optional): Whether the new thread should have a poll (default: False).
-		poll_question (str, optional): The question for the poll (default: "").
-		poll_options (list[str], optional): The options for the poll (default: None).
-		poll_num_of_options (int, optional): The number of options for the poll (default: 0).
-		poll_num_of_votes (int, optional): The number of votes for the poll (default: 0).
-
-	TODO: set up polls
-	"""
+	#TODO: set up polls
 	driver = forum.driver
 	driver.get(forum.url + '/newthread.asp?forumid=' + str(forum_id))
 	title_box = driver.find_element(By.XPATH,
@@ -512,10 +512,10 @@ def read_group(forum):
 
 
 def preregister_member(forum):
+	# pre-make the User class
 	navigate_in_admin_cp(forum, "Pre-register Member")
 
 
-# pre-make the User class
 
 
 def return_user_obj(_id: int):
@@ -610,13 +610,8 @@ def clear_filters(forum):
 	driver = forum.driver
 	delete_buttons = driver.find_elements(By.XPATH, "//input[@type='Button'][@value='Delete']")
 	for delete_button in delete_buttons:
-		# Click the Delete button
 		delete_button.click()
-
-		# Wait for the confirmation alert to appear
 		WebDriverWait(driver, 10).until(EC.alert_is_present())
-
-		# Switch to the alert and click OK (accept)
 		alert = Alert(driver)
 		alert.accept()
 	print("Done clear")
@@ -624,19 +619,6 @@ def clear_filters(forum):
 
 def add_filter(word_to_change, new_word, forum, mode=0):
 	# mode 0 is Full Word Only, mode 1 is Containing Word
-	"""
-	Adds a filter to the forum's settings.
-
-	Parameters:
-		word_to_change (str): The word to be changed by the filter.
-		new_word (str): The new word that will replace the old word in the filter.
-		forum (Forum): The forum object representing the forum to add the filter to.
-		mode (int, optional): The mode of the filter. 0 for Full Word Only, 1 for Containing Word.
-			Defaults to 0.
-
-	Returns:
-		None
-	"""
 	goto_admin_cp(forum)
 	driver = forum.driver
 	if "Add Filters" not in driver.page_source:
@@ -655,8 +637,8 @@ def add_filter(word_to_change, new_word, forum, mode=0):
 	button.send_keys(Keys.ENTER)
 
 
-def remove_filters(forum):
-	pass
+def remove_filters(forum): # alias for clear_filters
+	clear_filters(forum)
 
 
 def add_filters(filter_dictionary: dict, forum: Forum, mode: int = 0):
@@ -838,12 +820,8 @@ async def get_post_content_with_time(forum, post):
 
 
 async def main():
-	time1 = "5th Apr 2026 9:00:43 PM"
-	time2 = "Sunday 5th April 2026, 9:00:43 PM"
-	time3 = "04/05/2026 21:00:43"
-	print(parse_time(time1))
-	print(parse_time(time2))
-	print(parse_time(time3))
+	forum = Forum("survivalhorror7")
+	print(get_mem_wall(forum))
 
 
 if __name__ == "__main__":
