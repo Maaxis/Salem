@@ -118,7 +118,6 @@ def get_game(url, driver):
 
 if __name__ == '__main__':
 	driver = ndimtools.start_driver()
-	# games = ["rusticsurvivor7", "rusticsurvivor8", "rusticsurvivor9", "survivortwisted7", "survivortwisted8", "rusticsurvivor5", "survivortwisted6"]
-	games = ['vicecity', 'kingdomhearts', 'southpark']
+	games = ['gumbyvivor','bigmanorcirque','bigmanorinsideout']
 	for game in games:
 		get_game(game, driver)

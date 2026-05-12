@@ -49,7 +49,7 @@ class Post:
 
 class User:
 	def __init__(self, subdomain: str, _id: int = None, username: str = None, password: str = None,
-	             masks: list['Mask'] = None, avatar: str = None, display_name: str = None, group: 'Group' = None):
+	             masks: list['Mask'] = None, avatar: str = None, display_name: str = None, group: 'Group' = None, email: str = None):
 		self.subdomain = subdomain
 		self.id = _id  # id is not required since we can also premake the object for preregistering
 		self.username = username
@@ -58,6 +58,7 @@ class User:
 		self.avatar = avatar
 		self.group = group
 		self.display_name = display_name
+		self.email = email
 
 
 class Mask:
@@ -66,8 +67,9 @@ class Mask:
 
 
 class Group:
-	def __init__(self):
-		pass
+	def __init__(self, name: str = None):
+		self.name = name
+
 
 
 class Bot(User):
@@ -361,6 +363,33 @@ async def set_news_fader(forum: Forum, news_fader: str = None):
 		except Exception as e:
 			print(f"Error changing news fader: {e}")
 
+def navigate_create_forum(forum: Forum):
+	navigate_in_admin_cp(forum, "Create Forum")
+
+def create_forum(forum: Forum, name = str, category = str):
+	navigate_create_forum(forum)
+	driver = forum.driver
+	fname = driver.find_element(By.NAME, "fname")
+	fname.clear()
+	fname.send_keys(name)
+	category_selection = Select(driver.find_element(By.NAME, "category"))
+	for option in category_selection.options:
+		if category in option.text:
+			category_selection.select_by_visible_text(option.text)
+			break
+	#category_selection.select_by_visible_text(category)
+	# TODO: make these customizable
+	postinc = driver.find_element(By.NAME, "postinc")
+	if postinc.is_selected():
+		postinc.click()
+	driver.find_element(By.ID, "allcell1").click() # admin mask
+	create_button = driver.find_element(By.XPATH, "//input[@value='Create']")
+	create_button.click()
+
+
+
+
+
 
 def navigate_masks(forum: Forum):
 	navigate_in_admin_cp(forum, "Forum Masks")
@@ -511,9 +540,32 @@ def read_group(forum):
 	pass
 
 
-def preregister_member(forum):
+def preregister_member(forum: Forum, user: User):
 	# pre-make the User class
 	navigate_in_admin_cp(forum, "Pre-register Member")
+	username = user.username
+	password = user.password
+	email = user.email
+	group = user.group.name
+	driver = forum.driver
+	#text_boxes = driver.find_elements(By.XPATH, "//input[@type='text']")
+	text_boxes = driver.find_elements(By.CLASS_NAME, "textboxstyle")
+	text_boxes[0].clear()
+	text_boxes[0].send_keys(username)
+	#time.sleep(1)
+	text_boxes[1].clear()
+	text_boxes[1].send_keys(password)
+	#time.sleep(1)
+	text_boxes[2].clear()
+	text_boxes[2].send_keys(email)
+	#time.sleep(1)
+	selector = Select(driver.find_elements(By.CLASS_NAME, "selectstyle")[0])
+	selector.select_by_visible_text(str(group))
+	#time.sleep(1)
+	button = driver.find_elements(By.CLASS_NAME, "buttonstyle")[0]
+	button.send_keys(Keys.ENTER)
+	print(f"Registered user {username}")
+	#time.sleep(5)
 
 
 
@@ -656,6 +708,15 @@ async def add_filters_from_file(forum, filename, delimiter):
 				add_filter(word_to_change, filter, forum)
 				time.sleep(0.2)
 
+async def preregister_from_file(forum, filename, delimiter, email, groupname):
+	async with browser_lock:
+		with open(filename) as file:
+			for line in file:
+				username = line.split(delimiter)[0].strip()
+				password = line.split(delimiter)[1].strip()
+				group = Group(groupname)
+				user = User(subdomain=forum.subdomain, username=username, password=password, group=group, email=email)
+				preregister_member(forum, user)
 
 def overwrite_filters():
 	pass
@@ -818,10 +879,28 @@ async def get_post_content_with_time(forum, post):
 			print(e)
 			raise Exception
 
+#remove later
+async def make_logbooks(forum):
+	async with browser_lock:
+		with open("accounts.txt") as file:
+			for line in file:
+				username = line.split(",")[0].strip()
+				category = "Logbooks"
+				create_forum(forum, username, category)
+
+#remove later
+async def make_subfolders(forum):
+	async with browser_lock:
+		with open("accounts.txt") as file:
+			for line in file:
+				username = line.split(",")[0].strip()
+				category = username
+				name = f"{username}'s Submissions"
+				create_forum(forum, name, category)
+
 
 async def main():
-	forum = Forum("survivalhorror7")
-	print(get_mem_wall(forum))
+	forum = Forum("void6")
 
 
 if __name__ == "__main__":
